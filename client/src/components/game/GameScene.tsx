@@ -1,7 +1,7 @@
 import { useRef, useEffect } from "react";
 import { useGhostGame } from "../../lib/stores/useGhostGame";
 import { useAudio } from "../../lib/stores/useAudio";
-import Lane from "./Lane";
+import Ghost from "./Ghost";
 
 export default function GameScene() {
   const { 
@@ -121,20 +121,32 @@ export default function GameScene() {
           border: '2px solid #00cc00'
         }} />
 
-        {/* Render the three lanes */}
-        {[0, 1, 2].map((laneIndex) => {
-          const ghostsInLane = ghostQueue
-            .filter(ghost => ghost.laneIndex === laneIndex)
-            .sort((a, b) => a.row - b.row); // sort by row (closest first)
-          
-          return (
-            <Lane 
-              key={laneIndex} 
-              laneIndex={laneIndex} 
-              ghosts={ghostsInLane}
-            />
-          );
-        })}
+        {/* Render ghosts directly in their positions */}
+        {ghostQueue
+          .filter(ghost => ghost.row >= 0 && ghost.row < 15) // only show visible ghosts
+          .sort((a, b) => a.row - b.row) // sort by row (closest first)
+          .map((ghost) => {
+            const laneWidth = 300; // 900px / 3 lanes
+            const laneCenter = laneWidth * ghost.laneIndex + laneWidth / 2;
+            const rowPosition = 100 + (ghost.row * 40); // start from top, each row 40px apart
+            
+            return (
+              <div
+                key={ghost.id}
+                style={{
+                  position: 'absolute',
+                  left: `${laneCenter - 25}px`, // center the 50px ghost
+                  top: `${rowPosition}px`,
+                  zIndex: 100 - ghost.row // closer ghosts on top
+                }}
+              >
+                <Ghost
+                  ghost={ghost}
+                  isClosest={ghost.row === 0}
+                />
+              </div>
+            );
+          })}
       </div>
     </div>
   );
