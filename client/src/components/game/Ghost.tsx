@@ -78,10 +78,10 @@ export default function Ghost({ ghost, isClosest }: GhostProps) {
           left: 0,
           right: 0,
           height: '10px',
-          background: `linear-gradient(45deg, ${isClosest ? '#ff6666' : '#ffffff'} 25%, transparent 25%), 
-                      linear-gradient(-45deg, ${isClosest ? '#ff6666' : '#ffffff'} 25%, transparent 25%), 
-                      linear-gradient(45deg, transparent 75%, ${isClosest ? '#ff6666' : '#ffffff'} 75%), 
-                      linear-gradient(-45deg, transparent 75%, ${isClosest ? '#ff6666' : '#ffffff'} 75%)`,
+          backgroundImage: `linear-gradient(45deg, ${isClosest ? '#ff6666' : '#ffffff'} 25%, transparent 25%), 
+                           linear-gradient(-45deg, ${isClosest ? '#ff6666' : '#ffffff'} 25%, transparent 25%), 
+                           linear-gradient(45deg, transparent 75%, ${isClosest ? '#ff6666' : '#ffffff'} 75%), 
+                           linear-gradient(-45deg, transparent 75%, ${isClosest ? '#ff6666' : '#ffffff'} 75%)`,
           backgroundSize: '8px 8px',
           backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px'
         }} />

@@ -39,7 +39,7 @@ export default function Lane({ laneIndex, ghosts }: LaneProps) {
           <Ghost
             key={ghost.id}
             ghost={ghost}
-            isClosest={index === 0}
+            isClosest={ghost.row === 0} // closest ghost has row = 0
           />
         ))}
       </div>

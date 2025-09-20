@@ -5,15 +5,15 @@ export type GamePhase = "ready" | "playing" | "ended";
 
 export interface GhostData {
   id: number;
-  laneIndex: number;
-  position: number;
+  laneIndex: number; // 0=left, 1=middle, 2=right
+  row: number; // distance from player (0 is closest)
 }
 
 interface GhostGameState {
   gamePhase: GamePhase;
   score: number;
   timeLeft: number;
-  lanes: GhostData[][];
+  ghostQueue: GhostData[]; // single queue of ghosts, each in different rows
   nextGhostId: number;
   gameTimer: NodeJS.Timeout | null;
 
@@ -26,12 +26,12 @@ interface GhostGameState {
   generateGhosts: () => void;
 }
 
-// Helper function to generate random ghosts for a lane
-const generateGhostsForLane = (startId: number, count: number, laneIndex: number): GhostData[] => {
+// Helper function to generate random ghost queue
+const generateGhostQueue = (startId: number, count: number): GhostData[] => {
   return Array.from({ length: count }, (_, index) => ({
     id: startId + index,
-    laneIndex,
-    position: index
+    laneIndex: Math.floor(Math.random() * 3), // randomly choose lane 0, 1, or 2
+    row: index // position in queue (0 is closest to player)
   }));
 };
 
@@ -40,7 +40,7 @@ export const useGhostGame = create<GhostGameState>()(
     gamePhase: "ready",
     score: 0,
     timeLeft: 30,
-    lanes: [[], [], []], // Three empty lanes
+    ghostQueue: [], // Empty ghost queue
     nextGhostId: 1,
     gameTimer: null,
 
@@ -102,61 +102,54 @@ export const useGhostGame = create<GhostGameState>()(
 
     generateGhosts: () => {
       const { nextGhostId } = get();
-      let currentId = nextGhostId;
-
-      // Generate 10-15 ghosts per lane initially
-      const lane0Count = Math.floor(Math.random() * 6) + 10;
-      const lane1Count = Math.floor(Math.random() * 6) + 10;
-      const lane2Count = Math.floor(Math.random() * 6) + 10;
-
-      const lane0 = generateGhostsForLane(currentId, lane0Count, 0);
-      currentId += lane0Count;
-
-      const lane1 = generateGhostsForLane(currentId, lane1Count, 1);
-      currentId += lane1Count;
-
-      const lane2 = generateGhostsForLane(currentId, lane2Count, 2);
-      currentId += lane2Count;
+      
+      // Generate 20-25 ghosts in queue initially
+      const ghostCount = Math.floor(Math.random() * 6) + 20;
+      const newQueue = generateGhostQueue(nextGhostId, ghostCount);
 
       set({
-        lanes: [lane0, lane1, lane2],
-        nextGhostId: currentId
+        ghostQueue: newQueue,
+        nextGhostId: nextGhostId + ghostCount
       });
     },
 
     shootGhost: (laneIndex: number): boolean => {
-      const { lanes, score, nextGhostId } = get();
+      const { ghostQueue, score, nextGhostId } = get();
       
       if (laneIndex < 0 || laneIndex >= 3) return false;
       
-      const targetLane = lanes[laneIndex];
+      // Find the closest ghost in the specified lane
+      const ghostsInLane = ghostQueue.filter(ghost => ghost.laneIndex === laneIndex);
+      if (ghostsInLane.length === 0) return false;
       
-      // Check if there's a ghost to shoot
-      if (targetLane.length === 0) return false;
-
-      // Remove the first (closest) ghost
-      const newLanes = [...lanes];
-      newLanes[laneIndex] = targetLane.slice(1).map((ghost, index) => ({
-        ...ghost,
-        position: index
-      }));
-
-      // Add new ghosts randomly to keep the queues filled
-      const shouldAddGhost = Math.random() < 0.7; // 70% chance to add a new ghost
+      // Find the ghost with the smallest row (closest to player)
+      const closestGhost = ghostsInLane.reduce((closest, current) => 
+        current.row < closest.row ? current : closest
+      );
+      
+      // Remove the shot ghost from queue
+      const newQueue = ghostQueue.filter(ghost => ghost.id !== closestGhost.id)
+        .map(ghost => ({
+          ...ghost,
+          row: ghost.row > closestGhost.row ? ghost.row - 1 : ghost.row // move ghosts forward
+        }));
+      
+      // Add a new ghost at the back of the queue (70% chance)
+      const shouldAddGhost = Math.random() < 0.7;
       if (shouldAddGhost) {
-        const randomLane = Math.floor(Math.random() * 3);
+        const maxRow = newQueue.length > 0 ? Math.max(...newQueue.map(g => g.row)) : -1;
         const newGhost: GhostData = {
           id: nextGhostId,
-          laneIndex: randomLane,
-          position: newLanes[randomLane].length
+          laneIndex: Math.floor(Math.random() * 3), // random lane
+          row: maxRow + 1
         };
-        newLanes[randomLane].push(newGhost);
+        newQueue.push(newGhost);
         
         set({ nextGhostId: nextGhostId + 1 });
       }
 
       set({
-        lanes: newLanes,
+        ghostQueue: newQueue,
         score: score + 1
       });
 

@@ -5,7 +5,7 @@ import Lane from "./Lane";
 
 export default function GameScene() {
   const { 
-    lanes, 
+    ghostQueue, 
     shootGhost, 
     gamePhase, 
     timeLeft,
@@ -122,13 +122,19 @@ export default function GameScene() {
         }} />
 
         {/* Render the three lanes */}
-        {lanes.map((lane, index) => (
-          <Lane 
-            key={index} 
-            laneIndex={index} 
-            ghosts={lane}
-          />
-        ))}
+        {[0, 1, 2].map((laneIndex) => {
+          const ghostsInLane = ghostQueue
+            .filter(ghost => ghost.laneIndex === laneIndex)
+            .sort((a, b) => a.row - b.row); // sort by row (closest first)
+          
+          return (
+            <Lane 
+              key={laneIndex} 
+              laneIndex={laneIndex} 
+              ghosts={ghostsInLane}
+            />
+          );
+        })}
       </div>
     </div>
   );
